@@ -95,7 +95,7 @@ const eliminarTarea = async (req, res) => {
 
     try {
         await tarea.deleteOne();
-        res.json({msg: "Tarea eliminada"});
+        res.json({msg: "La tarea se eliminó"});
     } catch (error) {
         console.log (error);
     };
@@ -103,7 +103,23 @@ const eliminarTarea = async (req, res) => {
 };
 
 const cambiarEstado = async (req, res) => {
+    const { id } = req.params;
+    
+    const tarea =  await Tarea.findById(id).populate('proyecto');
 
+    if(!tarea) {
+        const error = new Error ('La tarea no existe');
+        return res.status(404).json({ msg: error.message });
+    };
+
+    if(tarea.proyecto.creador.toString() !== req.usuario._id.toString() && 
+    !tarea.proyecto.colaboradores.some( (colaborador) => colaborador._id.toString() === req.usuario._id.toString() )){
+        const error = new Error ('Acción no válida');
+        return res.status(403).json({ msg: error.message });
+    };
+    tarea.estado = !tarea.estado;
+    await tarea.save()
+    res.json(tarea);
 };
 
 export { agregarTarea, obtenerTarea, actualizarTarea, eliminarTarea, cambiarEstado }
